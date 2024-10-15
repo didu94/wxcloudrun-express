@@ -1,45 +1,27 @@
+require('dotenv').config();
+
 const path = require('path');
 const express = require('express');
+// const bodyParser = require("body-parser"); /* deprecated */
 const cors = require('cors');
 const morgan = require('morgan');
-const { init: initDB, Counter } = require('./db');
 
 const logger = morgan('tiny');
 
 const app = express();
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
+
 app.use(cors());
+
+// parse requests of content-type - application/json
+app.use(express.json()); /* bodyParser.json() is deprecated */
+
+// parse requests of content-type - application/x-www-form-urlencoded
+app.use(express.urlencoded({ extended: true })); /* bodyParser.urlencoded() is deprecated */
 app.use(logger);
 
 // 首页
 app.get('/', async (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// 更新计数
-app.post('/api/count', async (req, res) => {
-  const { action } = req.body;
-  if (action === 'inc') {
-    await Counter.create();
-  } else if (action === 'clear') {
-    await Counter.destroy({
-      truncate: true,
-    });
-  }
-  res.send({
-    code: 0,
-    data: await Counter.count(),
-  });
-});
-
-// 获取计数
-app.get('/api/count', async (req, res) => {
-  const result = await Counter.count();
-  res.send({
-    code: 0,
-    data: result,
-  });
 });
 
 // 小程序调用，获取微信 Open ID
@@ -49,13 +31,11 @@ app.get('/api/wx_openid', async (req, res) => {
   }
 });
 
-const port = process.env.PORT || 80;
+require('./app/routes/tutorial.routes.js')(app);
 
-async function bootstrap() {
-  await initDB();
-  app.listen(port, () => {
-    console.log('启动成功!', port);
-  });
-}
-
-bootstrap();
+// set port, listen for requests
+console.log('process.env', process.env);
+const PORT = process.env.PORT || 80;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}.`);
+});
